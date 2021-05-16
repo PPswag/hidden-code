@@ -12,8 +12,22 @@ prefix = "prefix u have"
 bot = commands.Bot(command_prefix=prefix,intents=discord.Intents.all(), case_insensitive=True)
 #bot.remove_command('help') <- if u  want
 
+db = aiosqlite.connect("blacklist.sqlite")
+
+
 @bot.event
 async def on_ready():
+    await db
+
+    cursor = await db.cursor()
+
+    await cursor.execute("""
+      CREATE TABLE IF NOT EXISTS blacklist(
+        guild_id INTEGER,
+        user_id INTEGER,
+        blacklisted BOOL
+      )""")
+    await db.commit()
     print(f'Logged in as {bot.user}\n{bot.user.id}')
     await status()
     
@@ -118,7 +132,7 @@ async def _blacklist(ctx, mode, target: discord.Member = None, *, reason=None):
     await cursor.execute("SELECT user_id FROM blacklist WHERE user_id=?", (target.id,))
     row = await cursor.fetchone()
     if not row:
-      await cursor.execute("INSERT INTO blacklist(guild_id, user_id, blacklisted) VALUES(?, ?, ?, ?)", (ctx.guild.id, target.id, False, ))
+      await cursor.execute("INSERT INTO blacklist(guild_id, user_id, blacklisted) VALUES(?, ?, ?)", (ctx.guild.id, target.id, False, ))
     # if target.id == ctx.author.id:
     #   return await ctx.send("Dont blacklist yourself idiot")
     if mode != "remove" and mode != "add":
