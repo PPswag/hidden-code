@@ -4,6 +4,7 @@ import os
 import asyncio
 from asyncio import sleep
 import random
+import aiosqlite
 
 
 prefix = "prefix u have"
@@ -101,6 +102,56 @@ async def giveaway(ctx):
       winner = random.choice(users)
 
       await channel.send(f"**Congrats** {winner.mention}!**\n Message him {ctx.author.mention} to get your beloved prize.")
+        
+
+        
+ 
+blacklist = set() # to blacklsit users
+
+@bot.command(name="blacklist")
+async def _blacklist(ctx, mode, target: discord.Member=None, *, reason=None):
+    """Owner Command, will blacklist a user from bot"""
+    cursor = await db.cursor()
+    if target == None:
+      return await ctx.send("Bruh mention someone")
+    await cursor.execute("SELECT user_id FROM blacklist WHERE user_id=?", (target.id,))
+    row = await cursor.fetchone()
+    if not row:
+      await cursor.execute("INSERT INTO blacklist(guild_id, user_id, blacklisted) VALUES(?, ?, ?)", (ctx.guild.id, target.id, False, ))
+    # if target.id == ctx.author.id:
+    #   return await ctx.send("Dont blacklist yourself idiot")
+    if mode != "remove" and mode != "add":
+      return await ctx.send("Mate, it has to be add or remove")
+    blacklists = True if mode == "add" else False
+    await cursor.execute("UPDATE blacklist SET blacklisted = ? WHERE user_id = ? AND guild_id=?", (blacklists, target.id, ctx.guild.id))
+    await db.commit()
+
+    if mode == "add":
+      em = discord.Embed(title="Man got blacklisted", description="Now you can't use bot you noob", color = discord.Color.red())
+      em.add_field(name="Reason", value=reason or "None specified")
+      await target.send(embed=em)
+      await ctx.send(f"Succesfully blacklisted {target.name}")
+      blacklist.add(target.id)
+      print(blacklist)
+    else:
+      await ctx.send(f"{target.name} is unblacklsited YAY!!!!")
+      try:
+        blacklist.remove(target.id)
+        print(blacklist)
+      except KeyError:
+        return await ctx.send(f"Cant remove {target.name}")
+@bot.command()
+async def blacklisted(ctx):
+    cursor = await db.cursor()
+    await cursor.execute("SELECT * FROM blacklist WHERE guild_id=? AND blacklisted=?", (ctx.guild.id, True,))
+    row = await cursor.fetchall()
+    print(row)
+
+@bot.event
+async def on_message(message):
+  if message.author.id in blacklist: # had to do in main file too lazy to do all the cog work since it would cause so many problems
+    return 
+  await bot.process_commands(message)
         
 @bot.command()
     async def fight(ctx, member:discord.Member = None):# my code for people who want dank meme fight cmd
