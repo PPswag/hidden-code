@@ -26,8 +26,84 @@ async def status():
         await sleep(15) # make it anything u want
         
  
+async def GetMessage(
+  bot, ctx, contentOne = "Default message", contentTwo = "\uFEFF", timeout = 100
+):
+
+
+  embed = discord.Embed(title = f"{contentOne}", description=f"{contentTwo}")
+  sent = await ctx.send(embed=embed)
+
+  try:
+    msg = await bot.wait_for("message", timeout=timeout, check = lambda message: message.author == ctx.author and message.channel == ctx.channel,
+    )
+    if msg:
+      return msg.content
+  except asyncio.TimeoutError:
+    return False # got this code from camberra, it will be modified.
+
 @bot.command()
-    async def fight(ctx, member:discord.Member = None):
+async def giveaway(ctx):
+      await ctx.send("Ok we will run giveaway, now simply answer the questions **below**.")
+
+      questionlist = [ 
+        ["In which channel should the giveaway be in?", "Mention it!"],
+        ["How long should this giveaway be?", "**AND AGAIN** use `s|m|h|d` ."],
+        ["What is the prize of this giveaway?", "BE ***HUMBLE***."]
+        ]
+      answers = {}
+
+      for i, question in  enumerate(questionlist):  
+        answer = await GetMessage(bot, ctx, question[0], question[1])
+
+        if not answer:
+          await ctx.send("Oyy, give me an answer. ***BRUH***")
+        
+        answers[i] = answer
+
+      em = discord.Embed(title="Giveaway questions", color = discord.Color.orange())
+      for key, value in answers.items():
+        em.add_field(name = f"Question {questionlist[key][0]}", value=f"Answer: `{value}`", inline=False)
+
+      m = await ctx.send("Are these all valid? Gimme answer!", embed=em)
+      await m.add_reaction("✅")
+      await m.add_reaction("❌")
+
+      try:
+        reaction, member = await bot.wait_for('reaction_add', timeout=45, check = lambda reaction, user: user == ctx.author and reaction.message.channel == ctx.channel)
+      except asyncio.TimeoutError:
+        await ctx.send("You took too much. Sorry!")
+        return
+
+      if str(reaction.emoji) not in ["✅", "❌"] or str(reaction.emoji) == "❌":
+        await ctx.send("Giveaway canceled!")
+
+      channelid = re.findall(r"[0-9]+", answers[0])[0]
+      channel = self.bot.get_channel(int(channelid))
+
+      time = convert(answers[1])
+
+      em = discord.Embed(title="**GIVEAWAY**", description=f" **Prize** : {answers[2]}\n **Time** : {time}\n **Winners** : 1", color = discord.Color.orange())
+      em.set_footer(text= f"Holden by {ctx.author.name}.")
+      em.set_thumbnail(url = 'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/120/mozilla/36/party-popper_1f389.png')
+      message = await channel.send(embed=em)
+      await message.add_reaction("EMOJI u want")
+
+      await asyncio.sleep(time)
+
+      message = await channel.fetch_message(message.id)
+      users = await message.reactions[0].users().flatten()
+      users.pop(users.index(ctx.guild.me))
+
+      if len(users) == None:
+        await channel.send("There was no winner! *Sucks*.")
+
+      winner = random.choice(users)
+
+      await channel.send(f"**Congrats** {winner.mention}!**\n Message him {ctx.author.mention} to get your beloved prize.")
+        
+@bot.command()
+    async def fight(ctx, member:discord.Member = None):# my code for people who want dank meme fight cmd
         health = {
             ctx.author: 100,
             member: 100
