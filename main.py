@@ -5,6 +5,7 @@ import asyncio
 from asyncio import sleep
 import random
 import aiosqlite
+import typing
 
 
 prefix = "prefix u have"
@@ -109,15 +110,15 @@ async def giveaway(ctx):
 blacklist = set() # to blacklsit users
 
 @bot.command(name="blacklist")
-async def _blacklist(ctx, mode, target: discord.Member=None, *, reason=None):
+async def _blacklist(ctx, mode, target: discord.Member = None, *, reason=None):
     """Owner Command, will blacklist a user from bot"""
     cursor = await db.cursor()
     if target == None:
-      return await ctx.send("Bruh mention someone")
+      return await ctx.send("Bruh mention someone") # if you want to blacklsit roles jsut do this same code, for giveaways ofc, and change the param to discord.Role and create a new table
     await cursor.execute("SELECT user_id FROM blacklist WHERE user_id=?", (target.id,))
     row = await cursor.fetchone()
     if not row:
-      await cursor.execute("INSERT INTO blacklist(guild_id, user_id, blacklisted) VALUES(?, ?, ?)", (ctx.guild.id, target.id, False, ))
+      await cursor.execute("INSERT INTO blacklist(guild_id, user_id, blacklisted) VALUES(?, ?, ?, ?)", (ctx.guild.id, target.id, False, ))
     # if target.id == ctx.author.id:
     #   return await ctx.send("Dont blacklist yourself idiot")
     if mode != "remove" and mode != "add":
@@ -132,7 +133,7 @@ async def _blacklist(ctx, mode, target: discord.Member=None, *, reason=None):
       await target.send(embed=em)
       await ctx.send(f"Succesfully blacklisted {target.name}")
       blacklist.add(target.id)
-      print(blacklist)
+#       print(blacklist)
     else:
       await ctx.send(f"{target.name} is unblacklsited YAY!!!!")
       try:
