@@ -6,6 +6,7 @@ from asyncio import sleep
 import random
 import aiosqlite
 import typing
+import datetime
 
 
 prefix = "prefix u have"
@@ -57,6 +58,55 @@ async def GetMessage(
       return msg.content
   except asyncio.TimeoutError:
     return False # got this code from camberra, it will be modified.
+
+
+@bot.command()
+async def gstart(ctx, mins : int, * , prize: str):
+        embed = discord.Embed(title = "Giveaway!", description = f"{prize}", color = ctx.author.color)
+
+        end = datetime.datetime.utcnow() + datetime.timedelta(seconds = mins*60) 
+        start = datetime.datetime.utcnow()
+        print(end)
+        print(start)
+
+        embed.add_field(name = "Ends At:", value = f"{end} UTC")
+        embed.set_footer(text = f"Ends {mins} minutes from now! Will start counting down by 30 seconds") # <- You can change to whatever time you want.
+
+        my_msg = await ctx.send(embed = embed)
+
+
+        await my_msg.add_reaction("EMOJI") # fill in emoji here
+
+        while True:
+          difference = end - datetime.datetime.now()
+          count_hours, rem = divmod(difference.seconds, 3600)
+          count_minutes, count_seconds = divmod(rem, 60)
+          if difference.days == 0 and count_hours == 0 and count_minutes == 0 and count_seconds == 0:
+            new_msg = await ctx.channel.fetch_message(my_msg.id)
+            try:
+              users = await new_msg.reactions[0].users().flatten()
+              users.pop(users.index(self.bot.user))
+              winner = random.choice(users)
+            except IndexError:
+              return await ctx.send("no one chose in time") # didn't feel like raising it
+
+            await ctx.send(f"Congratulations! {winner.mention} won {prize}!")
+            break 
+          
+          if count_seconds <= 30:
+            embed = discord.Embed(title = "Giveaway!", description = f"{prize}", color = ctx.author.color)
+            embed.add_field(name = "Ends At:", value = f"{end} UTC")
+            embed.set_footer(text = f"Ends {count_seconds} seconds from now!") # you could put mins thne change it to seconds Idc
+            await my_msg.edit(embed=embed)
+            # print('The count is: '
+            #         + str(difference.days) + " day(s) "
+            #         + str(count_hours) + " hour(s) "
+            #         + str(count_minutes) + " minute(s) "
+            #         + str(count_seconds) + " second(s) "
+            #         )
+          time.sleep(1)
+
+
 
 @bot.command()
 async def giveaway(ctx):
