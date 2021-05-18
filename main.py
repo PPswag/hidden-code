@@ -13,7 +13,7 @@ prefix = "prefix u have"
 bot = commands.Bot(command_prefix=prefix,intents=discord.Intents.all(), case_insensitive=True)
 #bot.remove_command('help') <- if u  want
 
-db = aiosqlite.connect("blacklist.sqlite")
+db = aiosqlite.connect("main.sqlite")
 
 
 @bot.event
@@ -29,6 +29,16 @@ async def on_ready():
         blacklisted BOOL
       )""")
     await db.commit()
+    
+    await cursor.execute("""
+        CREATE TABLE IF NOT EXISTS giveaway(
+          user_id INTEGER,
+          channel_id INTEGER,
+          guild_id INTEGER,
+          winners INTEGER,
+          time TEXT NOT NULL,
+          prize TEXT NOT NULL
+          )""")
     print(f'Logged in as {bot.user}\n{bot.user.id}')
     await status()
     
@@ -61,7 +71,7 @@ async def GetMessage(
 
 
 @bot.command()
-async def gstart(ctx, mins : int, * , prize: str):
+async def gstart(ctx, mins : int, * , prize: str, winners: int):
         embed = discord.Embed(title = "Giveaway!", description = f"{prize}", color = ctx.author.color)
 
         end = datetime.datetime.utcnow() + datetime.timedelta(seconds = mins*60) 
