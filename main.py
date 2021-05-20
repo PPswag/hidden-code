@@ -30,15 +30,15 @@ async def on_ready():
       )""")
     await db.commit()
     
-    await cursor.execute("""
-        CREATE TABLE IF NOT EXISTS giveaway(
-          user_id INTEGER,
-          channel_id INTEGER,
-          guild_id INTEGER,
-          winners INTEGER,
-          time TEXT NOT NULL,
-          prize TEXT NOT NULL
-          )""")
+#     await cursor.execute("""
+#         CREATE TABLE IF NOT EXISTS giveaway(
+#           user_id INTEGER,
+#           channel_id INTEGER,
+#           guild_id INTEGER,
+#           winners INTEGER,
+#           time TEXT NOT NULL,
+#           prize TEXT NOT NULL
+#           )""")
     print(f'Logged in as {bot.user}\n{bot.user.id}')
     await status()
     
@@ -71,21 +71,23 @@ async def GetMessage(
 
 
 @bot.command()
-async def gstart(ctx, mins : int, * , prize: str, winners: int):
+async def gstart(ctx, mins : int, * , prize: str, winners: int=1):
         embed = discord.Embed(title = "Giveaway!", description = f"{prize}", color = ctx.author.color)
 
         end = datetime.datetime.utcnow() + datetime.timedelta(seconds = mins*60) 
         start = datetime.datetime.utcnow()
         print(end)
         print(start)
+        winner = []
 
-        embed.add_field(name = "Ends At:", value = f"{end} UTC")
+        embed.add_field(name = "Ends At:", value = f"{end} UTC! \n{winners} winners!!")
         embed.set_footer(text = f"Ends {mins} minutes from now! Will start counting down by 30 seconds") # <- You can change to whatever time you want.
 
         my_msg = await ctx.send(embed = embed)
 
 
         await my_msg.add_reaction("EMOJI") # fill in emoji here
+        
 
         while True:
           difference = end - datetime.datetime.now()
@@ -96,11 +98,13 @@ async def gstart(ctx, mins : int, * , prize: str, winners: int):
             try:
               users = await new_msg.reactions[0].users().flatten()
               users.pop(users.index(self.bot.user))
-              winner = random.choice(users)
+              for x in range(winners):
+                winner.append(random.choice(users))
+#               winner = random.choice(users)
             except IndexError:
               return await ctx.send("no one chose in time") # didn't feel like raising it
 
-            await ctx.send(f"Congratulations! {winner.mention} won {prize}!")
+            await ctx.send("Congratulations! {} won {}!".format(", ".join([users.mention for users in winner]), prize))
             break 
           
           if count_seconds <= 30:
